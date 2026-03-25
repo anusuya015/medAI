@@ -1,0 +1,468 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MedAI — Triage</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #070b14;
+    --surface: #0d1424;
+    --surface2: #111c30;
+    --border: #1a2d4a;
+    --accent: #4d9fff;
+    --accent2: #2979e8;
+    --accent-glow: rgba(77,159,255,0.15);
+    --text: #e0eaf8;
+    --text-muted: #6a8ab0;
+    --emergency: #ff5252;
+    --urgent: #ffb74d;
+    --appointment: #64b5f6;
+    --selfcare: #81c784;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'DM Sans', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+    overflow-x: hidden;
+  }
+
+  /* Ambient background */
+  body::before {
+    content: '';
+    position: fixed;
+    top: -200px; left: -200px;
+    width: 600px; height: 600px;
+    background: radial-gradient(circle, rgba(77,159,255,0.07) 0%, transparent 70%);
+    pointer-events: none;
+    animation: drift 12s ease-in-out infinite alternate;
+  }
+  body::after {
+    content: '';
+    position: fixed;
+    bottom: -100px; right: -100px;
+    width: 400px; height: 400px;
+    background: radial-gradient(circle, rgba(77,159,255,0.05) 0%, transparent 70%);
+    pointer-events: none;
+    animation: drift 16s ease-in-out infinite alternate-reverse;
+  }
+  @keyframes drift {
+    from { transform: translate(0,0); }
+    to   { transform: translate(40px, 30px); }
+  }
+
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 24px;
+    padding: 48px;
+    width: 100%;
+    max-width: 620px;
+    position: relative;
+    box-shadow: 0 0 80px rgba(0,0,0,0.6), 0 0 0 1px rgba(77,159,255,0.05);
+    animation: fadeUp 0.6s ease both;
+  }
+  @keyframes fadeUp {
+    from { opacity:0; transform: translateY(24px); }
+    to   { opacity:1; transform: translateY(0); }
+  }
+
+  /* Header */
+  .header {
+    display: flex;
+    align-items: flex-start;
+    gap: 16px;
+    margin-bottom: 40px;
+  }
+  .logo {
+    width: 48px; height: 48px;
+    background: linear-gradient(135deg, var(--accent), var(--accent2));
+    border-radius: 14px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 22px;
+    flex-shrink: 0;
+    box-shadow: 0 0 24px rgba(77,159,255,0.3);
+  }
+  .header-text h1 {
+    font-family: 'DM Serif Display', serif;
+    font-size: 28px;
+    color: var(--text);
+    line-height: 1.1;
+    letter-spacing: -0.5px;
+  }
+  .header-text p {
+    font-size: 13px;
+    color: var(--text-muted);
+    margin-top: 4px;
+    font-weight: 300;
+    letter-spacing: 0.3px;
+  }
+
+  /* Section label */
+  .label {
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 1.2px;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin-bottom: 10px;
+  }
+
+  /* Textarea */
+  .symptom-box {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 16px;
+    margin-bottom: 28px;
+    transition: border-color 0.2s, box-shadow 0.2s;
+  }
+  .symptom-box:focus-within {
+    border-color: var(--accent2);
+    box-shadow: 0 0 0 3px var(--accent-glow);
+  }
+  textarea {
+    width: 100%;
+    background: transparent;
+    border: none;
+    outline: none;
+    color: var(--text);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 15px;
+    font-weight: 300;
+    resize: none;
+    line-height: 1.6;
+    min-height: 90px;
+  }
+  textarea::placeholder { color: var(--text-muted); }
+
+  /* Sliders / inputs row */
+  .fields-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 16px;
+    margin-bottom: 20px;
+  }
+  .field {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 14px 16px;
+    transition: border-color 0.2s, box-shadow 0.2s;
+  }
+  .field:focus-within {
+    border-color: var(--accent2);
+    box-shadow: 0 0 0 3px var(--accent-glow);
+  }
+  .field-label {
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    margin-bottom: 6px;
+  }
+  .field input[type="number"] {
+    width: 100%;
+    background: transparent;
+    border: none;
+    outline: none;
+    color: var(--text);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 22px;
+    font-weight: 500;
+    -moz-appearance: textfield;
+  appearance: textfield;
+  }
+  .field input[type="number"]::-webkit-outer-spin-button,
+  .field input[type="number"]::-webkit-inner-spin-button { -webkit-appearance: none; }
+
+  /* Pain scale visual */
+  .pain-dots {
+    display: flex; gap: 4px; margin-top: 8px;
+  }
+  .pain-dot {
+    width: 6px; height: 6px; border-radius: 50%;
+    background: var(--border);
+    transition: background 0.2s;
+  }
+  .pain-dot.active { background: var(--accent); }
+  .pain-dot.high   { background: var(--emergency); }
+
+  /* Chronic toggle */
+  .toggle-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 14px 18px;
+    margin-bottom: 28px;
+    cursor: pointer;
+    transition: border-color 0.2s;
+  }
+  .toggle-row:hover { border-color: var(--accent2); }
+  .toggle-label { font-size: 14px; color: var(--text-muted); font-weight: 400; }
+  .toggle {
+    width: 44px; height: 24px;
+    background: var(--border);
+    border-radius: 12px;
+    position: relative;
+    transition: background 0.3s;
+    flex-shrink: 0;
+  }
+  .toggle::after {
+    content: '';
+    position: absolute;
+    top: 3px; left: 3px;
+    width: 18px; height: 18px;
+    background: var(--text-muted);
+    border-radius: 50%;
+    transition: transform 0.3s, background 0.3s;
+  }
+  .toggle.on { background: var(--accent2); }
+  .toggle.on::after { transform: translateX(20px); background: white; }
+  #c { display: none; }
+
+  /* Submit button */
+  .btn {
+    width: 100%;
+    padding: 16px;
+    background: linear-gradient(135deg, var(--accent), var(--accent2));
+    color: #070b14;
+    border: none;
+    border-radius: 14px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 15px;
+    font-weight: 600;
+    letter-spacing: 0.3px;
+    cursor: pointer;
+    transition: opacity 0.2s, transform 0.15s, box-shadow 0.2s;
+    box-shadow: 0 4px 24px rgba(77,159,255,0.25);
+    position: relative;
+    overflow: hidden;
+  }
+  .btn:hover { opacity: 0.92; transform: translateY(-1px); box-shadow: 0 8px 32px rgba(77,159,255,0.35); }
+  .btn:active { transform: translateY(0); }
+  .btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+
+  /* Pulse loader inside button */
+  .btn .spinner {
+    display: inline-block;
+    width: 16px; height: 16px;
+    border: 2px solid rgba(0,0,0,0.3);
+    border-top-color: #070b14;
+    border-radius: 50%;
+    animation: spin 0.7s linear infinite;
+    vertical-align: middle;
+    margin-right: 8px;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* Output */
+  #out {
+    display: none;
+    margin-top: 28px;
+    border-radius: 16px;
+    overflow: hidden;
+    animation: fadeUp 0.4s ease both;
+    border: 1px solid var(--border);
+  }
+  .out-header {
+    padding: 12px 20px;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 1.2px;
+    text-transform: uppercase;
+    background: var(--surface2);
+    color: var(--text-muted);
+    border-bottom: 1px solid var(--border);
+  }
+  .out-body {
+    background: var(--surface2);
+    padding: 20px;
+    font-size: 14px;
+    line-height: 1.75;
+    color: var(--text);
+    white-space: pre-wrap;
+    font-weight: 300;
+  }
+
+  /* Color-coded left border based on content */
+  #out.emergency { border-color: var(--emergency); }
+  #out.emergency .out-header { background: rgba(255,82,82,0.1); color: var(--emergency); border-color: rgba(255,82,82,0.2); }
+  #out.urgent    { border-color: var(--urgent); }
+  #out.urgent    .out-header { background: rgba(255,183,77,0.1); color: var(--urgent); border-color: rgba(255,183,77,0.2); }
+  #out.appointment { border-color: var(--appointment); }
+  #out.appointment .out-header { background: rgba(100,181,246,0.1); color: var(--appointment); border-color: rgba(100,181,246,0.2); }
+  #out.selfcare  { border-color: var(--selfcare); }
+  #out.selfcare  .out-header { background: rgba(129,199,132,0.1); color: var(--selfcare); border-color: rgba(129,199,132,0.2); }
+
+  .disclaimer {
+    margin-top: 24px;
+    font-size: 11px;
+    color: var(--text-muted);
+    text-align: center;
+    line-height: 1.5;
+    opacity: 0.7;
+  }
+
+  @media (max-width: 480px) {
+    .card { padding: 28px 20px; }
+    .fields-grid { grid-template-columns: 1fr 1fr; }
+  }
+</style>
+</head>
+<body>
+
+<div class="card">
+  <div class="header">
+    <div class="logo">
+      <svg width="26" height="26" viewBox="0 0 26 26" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <line x1="13" y1="1" x2="13" y2="5" stroke="white" stroke-width="1.6" stroke-linecap="round"/>
+        <circle cx="13" cy="1" r="1.4" fill="white"/>
+        <rect x="4" y="5" width="18" height="12" rx="3.2" fill="white" fill-opacity="0.12" stroke="white" stroke-width="1.5"/>
+        <rect x="7" y="9" width="4" height="3" rx="1.2" fill="white"/>
+        <rect x="15" y="9" width="4" height="3" rx="1.2" fill="white" fill-opacity="0.7"/>
+        <circle cx="9" cy="10.5" r="1" fill="#070b14"/>
+        <circle cx="17" cy="10.5" r="1" fill="#070b14"/>
+        <rect x="8.5" y="13.5" width="9" height="1.6" rx="0.8" fill="white" fill-opacity="0.45"/>
+        <rect x="11.5" y="17" width="3" height="2" rx="0.8" fill="white" fill-opacity="0.35"/>
+        <rect x="5.5" y="19" width="15" height="6" rx="2.5" fill="white" fill-opacity="0.12" stroke="white" stroke-width="1.4"/>
+        <circle cx="10" cy="22" r="1" fill="white" fill-opacity="0.6"/>
+        <circle cx="13" cy="22" r="1" fill="white" fill-opacity="0.6"/>
+        <circle cx="16" cy="22" r="1" fill="white" fill-opacity="0.6"/>
+      </svg>
+    </div>
+    <div class="header-text">
+      <h1>MedAI Triage</h1>
+      <p>AI-assisted symptom assessment &amp; care routing</p>
+    </div>
+  </div>
+
+  <div class="label">Describe Symptoms</div>
+  <div class="symptom-box">
+    <textarea id="s" rows="4" placeholder="e.g. Fever, headache, and sore throat since this morning…"></textarea>
+  </div>
+
+  <div class="label">Patient Details</div>
+  <div class="fields-grid">
+    <div class="field">
+      <div class="field-label">Pain Scale</div>
+      <input type="number" id="p" value="5" min="0" max="10" oninput="updateDots()">
+      <div class="pain-dots" id="dots"></div>
+    </div>
+    <div class="field">
+      <div class="field-label">Age</div>
+      <input type="number" id="a" value="35" min="0" max="120">
+    </div>
+    <div class="field">
+      <div class="field-label">Hours</div>
+      <input type="number" id="d" value="2" min="0" step="0.5">
+    </div>
+  </div>
+
+  <div class="toggle-row" onclick="toggleChronic()">
+    <span class="toggle-label">Has chronic conditions (diabetes, heart disease, etc.)</span>
+    <div class="toggle" id="tog"></div>
+  </div>
+  <input type="checkbox" id="c">
+
+  <button class="btn" id="btn" onclick="go()">Assess Patient</button>
+
+  <div id="out">
+    <div class="out-header" id="out-header">Assessment Result</div>
+    <div class="out-body" id="out-body"></div>
+  </div>
+
+  <p class="disclaimer">⚕️ AI-assisted triage only — not a substitute for professional medical advice.<br>In emergencies, call 112 or go to the nearest ER immediately.</p>
+</div>
+
+<script>
+  // Pain dots
+  function updateDots() {
+    const val = +document.getElementById('p').value;
+    const container = document.getElementById('dots');
+    container.innerHTML = '';
+    for (let i = 1; i <= 10; i++) {
+      const d = document.createElement('div');
+      d.className = 'pain-dot' + (i <= val ? (val >= 8 ? ' high' : ' active') : '');
+      container.appendChild(d);
+    }
+  }
+  updateDots();
+
+  // Chronic toggle
+  function toggleChronic() {
+    const cb = document.getElementById('c');
+    const tog = document.getElementById('tog');
+    cb.checked = !cb.checked;
+    tog.classList.toggle('on', cb.checked);
+  }
+
+  async function go() {
+    const out = document.getElementById('out');
+    const outBody = document.getElementById('out-body');
+    const outHeader = document.getElementById('out-header');
+    const btn = document.getElementById('btn');
+
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner"></span>Assessing…';
+    out.style.display = 'block';
+    out.className = '';
+    outHeader.textContent = 'Analyzing symptoms…';
+    outBody.textContent = '';
+
+    try {
+      const r = await fetch('/triage', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          symptoms: document.getElementById('s').value,
+          pain_scale: +document.getElementById('p').value,
+          age: +document.getElementById('a').value,
+          duration_hours: +document.getElementById('d').value,
+          has_chronic_conditions: document.getElementById('c').checked
+        })
+      });
+      const data = await r.json();
+      const text = data.triage_guidance || data.detail || 'No response received.';
+
+      // Color-code based on triage level in response
+      if (/EMERGENCY|🚨|911|ER immediately/i.test(text)) {
+        out.className = 'emergency';
+        outHeader.textContent = '🚨 Emergency — Immediate Action Required';
+      } else if (/URGENT|⚠️|urgent care/i.test(text)) {
+        out.className = 'urgent';
+        outHeader.textContent = '⚠️ Urgent Care Recommended';
+      } else if (/APPOINTMENT|📅|doctor|GP|physician/i.test(text)) {
+        out.className = 'appointment';
+        outHeader.textContent = '📅 Schedule an Appointment';
+      } else {
+        out.className = 'selfcare';
+        outHeader.textContent = '🏠 Self-Care Advised';
+      }
+
+      outBody.textContent = text;
+    } catch (e) {
+      out.className = '';
+      outHeader.textContent = 'Error';
+      outBody.textContent = 'Failed to connect to the triage service. Please try again.';
+    }
+
+    btn.disabled = false;
+    btn.innerHTML = 'Assess Patient';
+  }
+</script>
+</body>
+</html>
